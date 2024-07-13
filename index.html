@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Banana Quality Narrative Visualization</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/2.5.1/d3-annotation.min.js"></script>
+    <style>
+        body {
+            font-family: Georgia, serif;
+            background-color: #2c2c2c;
+            color: #d3d3d3;
+            margin: 0;
+            overflow: hidden;
+        }
+        .nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: #2c2c2c;
+            text-align: center;
+            padding: 10px;
+            border-bottom: 1px solid #d3d3d3;
+        }
+        .nav a {
+            color: #d3d3d3;
+            margin: 0 15px;
+            text-decoration: none;
+            font-size: 18px;
+            padding: 10px;
+            border: 1px solid #d3d3d3;
+            border-radius: 5px;
+        }
+        .nav a.active {
+            font-weight: bold;
+            text-decoration: underline;
+            background-color: #444;
+        }
+        .container {
+            padding-top: 60px;
+        }
+        .dot {
+            stroke: #d3d3d3;
+        }
+        .legend, .axis text, .annotation {
+            font-size: 12px;
+            fill: #d3d3d3;
+        }
+        .annotation-note-bg {
+            display: none;
+        }
+        .annotation-connector {
+            display: none;
+        }
+        .axis path, .axis line {
+            stroke: #d3d3d3;
+        }
+        .grid line {
+            stroke: #888;
+            stroke-opacity: 0.3;
+            stroke-width: 1.5;
+        }
+        .subtitle {
+            fill: #00ffff;
+        }
+        .legend {
+            filter: drop-shadow(0 0 10px #000);
+        }
+        .legend rect {
+            rx: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="#" id="ripeness" class="active">Ripeness</a>
+        <a href="#" id="sweetness">Sweetness</a>
+        <a href="#" id="acidity">Acidity</a>
+    </div>
+    <div class="container">
+        <svg width="100%" height="100%" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <script>
+        const margin = { top: 100, right: 70, bottom: 70, left: 70 };
+        const width = 800 - margin.left - margin.right;
+        const height = 600 - margin.top - margin.bottom;
+
+        const svg = d3.select("svg")
+            .style("background-color", "#2c2c2c")
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        let currentScene = 'ripeness';
+
+        d3.csv("banana_quality.csv").then(data => {
+            data.forEach(d => {
+                d.Size = +d.Size;
+                d.Ripeness = +d.Ripeness;
+                d.Sweetness = +d.Sweetness;
+                d.Acidity = +d.Acidity;
+            });
+
+            function renderScene() {
+                svg.transition().duration(1000).style("opacity", 0).on("end", () => {
+                    svg.selectAll("*").remove();
+                    if (currentScene === 'ripeness') {
+                        renderRipeness(data);
+                    } else if (currentScene === 'sweetness') {
+                        renderSweetness(data);
+                    } else if (currentScene === 'acidity') {
+                        renderAcidity(data);
+                    }
+                    svg.transition().duration(1000).style("opacity", 1);
+                });
+                d3.selectAll(".nav a").classed("active", false);
+                d3.select(`#${currentScene}`).classed("active", true);
+            }
+
+            function make_x_gridlines(x) {
+                return d3.axisBottom(x)
+                    .ticks(d3.max(data, d => d.Size) - d3.min(data, d => d.Size));
+            }
+
+            function make_y_gridlines(y) {
+                return d3.axisLeft(y)
+                    .ticks(d3.max(data, d => d.Ripeness) - d3.min(data, d => d.Ripeness));
+            }
+
+            function renderRipeness(data) {
+                const x = d3.scaleLinear()
+                    .domain(d3.extent(data, d => d.Size))
+                    .range([0, width]);
+
+                const y = d3.scaleLinear()
+                    .domain(d3.extent(data, d => d.Ripeness))
+                    .range([height, 0]);
+
+                svg.append("g")
+                    .attr("class", "grid")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(make_x_gridlines(x)
+                        .tickSize(-height)
+                        .tickFormat(""))
+
+                svg.append("g")
+                    .attr("class", "grid")
+                    .call(make_y_gridlines(y)
+                        .tickSize(-width)
+                        .tickFormat(""))
+
+                svg.append("g")
+                    .attr("transform", `translate(0,${height})`)
+                    .attr("class", "axis")
+                    .call(d3.axisBottom(x).tickSize(0))
+                    .selectAll("text")
+                    .style("font-size", "12px")
+                    .style("fill", "#d3d3d3");
+
+                svg.append("g")
+                    .attr("class", "axis")
+                    .call(d3.axisLeft(y).tickSize(0))
+                    .selectAll("text")
+                    .style("font-size", "12px")
+                    .style("fill", "#d3d3d3");
+
+                svg.append("text")
+                    .attr("transform", `translate(${width / 2},${height + margin.bottom - 10})`)
+                    .style("text-anchor", "middle")
+                    .style("font-size", "12px")
+                    .style("fill", "#d3d3d3")
+                    .text("Size");
+
+                svg.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", -margin.left + 20)
+                    .attr("x", -height / 2)
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .style("font-size", "12px")
+                    .style("fill", "#d3d3d3")
+                    .text("Ripeness");
+
+                const color = d3.scaleOrdinal()
+                    .domain(["Good", "Bad"])
+                    .range(["#4daf4a", "#e41a1c"]);
+
+                svg.append("g")
+                    .selectAll("dot")
+                    .data(data)
+                    .enter()
+                    .append("circle")
+                    .attr("class", "dot")
+                    .attr("cx", d => x(d.Size))
+                    .attr("cy", d => y(d.Ripeness))
+                    .attr("r", 6)
+                    .style("fill", d => color(d.Quality));
+
+                svg.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", -60)
+                    .attr("text-anchor", "middle")
+                    .attr("font-size", "24px")
+                    .attr("font-weight", "bold")
+                    .style("fill", "#d3d3d3")
+                    .text("Banana Quality");
+
+                svg.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", -35)
+                    .attr("text-anchor", "middle")
+                    .attr("font-size", "18px")
+                    .attr("class", "subtitle")
+                    .text("Ripeness");
+
+                const legend = svg.append("g")
+                    .attr("class", "legend")
+                    .attr("transform", `translate(${width - 130},${height - 150})`);
+
+                legend.append("rect")
+                    .attr("width", 120)
+                    .attr("height", 50)
+                    .attr("fill", "#2c2c2c")
+                    .attr("stroke", "#d3d3d3")
+                    .attr("rx", 10);
+
+                legend.append("circle")
+                    .attr("cx", 10)
+                    .attr("cy", 15)
+                    .attr("r", 6)
+                    .style("fill", "#4daf4a");
+
+                legend.append("text")
+                    .attr("x", 20)
+                    .attr("y", 20)
+                    .style("fill", "#d3d3d3")
+                    .text("Good");
+
+                legend.append("circle")
+                    .attr("cx", 10)
+                    .attr("cy", 35)
+                    .attr("r", 6)
+                    .style("fill", "#e41a1c");
+
+                legend.append("text")
+                    .attr("x", 20)
+                    .attr("y", 40)
+                    .style("fill", "#d3d3d3")
+                    .text("Bad");
+
+                const annotations = [
+                    {
+                        note: {
+                            label: "Large and ripe bananas tend to be good"
+                        },
+                        x: width + 30,
+                        y: 20,
+                        dy: 0,
+                        dx: -90
+                    },
+                    {
+                        note: {
+                            label: "Small and unripe bananas tend to be bad"
+                        },
+                        x: 10,
+                        y: height - 90,
+                        dy: 0,
+                        dx: 70
+                    }
+                ];
+
+                const makeAnnotations = d3.annotation()
+                    .annotations(annotations)
+                    .type(d3.annotationLabel);
+
+                svg.append("g")
+                    .attr("class", "annotation")
+                    .call(makeAnnotations)
+                    .selectAll("text")
+                    .style("fill", "#d3d3d3");
+            }
+
+            function renderSweetness(data) {
+                const x = d3.scaleLinear()
+                    .domain(d3.extent(data, d => d.Size))
+                    .range([0, width]);
+
+                const y = d3.scaleLinear()
+                    .domain(d3.extent(data, d => d.Sweetness))
+                    .range([height, 0]);
+
+                svg.append("g")
+                    .attr("class", "grid")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(make_x_gridlines(x)
+                        .tickSize(-height)
+                        .tickFormat(""))
+
+                svg.append("g")
+                    .attr("class", "grid")
+                    .call(make_y_gridlines(y)
+                        .tickSize(-width)
+                        .tickFormat(""))
+
+                svg.append("g")
+                    .attr("transform", `translate(0,${height})`)
+                    .attr("class", "axis")
+                    .call(d3.axisBottom(x).tickSize(0))
+                    .selectAll("text")
+                    .style("font-size", "12px")
+                    .style("fill", "#d3d3d3");
+
+                svg.append("g")
+                    .attr("class", "axis")
+                    .call(d3.axisLeft(y).tickSize(0))
+                    .selectAll("text")
+                    .style("font-size", "12px")
+                    .style("fill", "#d3d3d3");
+
+                svg.append("text")
+                    .attr("transform", `translate(${width / 2},${height + margin.bottom - 10})`)
+                    .style("text-anchor", "middle")
+                    .style("font-size", "12px")
+                    .style("fill", "#d3d3d3")
+                    .text("Size");
+
+                svg.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", -margin.left + 20)
+                    .attr("x", -height / 2)
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .style("font-size", "12px")
+                    .style("fill", "#d3d3d3")
+                    .text("Sweetness");
+
+                const color = d3.scaleOrdinal()
+                    .domain(["Good", "Bad"])
+                    .range(["#4daf4a", "#e41a1c"]);
+
+                svg.append("g")
+                    .selectAll("dot")
+                    .data(data)
+                    .enter()
+                    .append("circle")
+                    .attr("class", "dot")
+                    .attr("cx", d => x(d.Size))
+                    .attr("cy", d => y(d.Sweetness))
+                    .attr("r", 6)
+                    .style("fill", d => color(d.Quality));
+
+                svg.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", -60)
+                    .attr("text-anchor", "middle")
+                    .attr("font-size", "24px")
+                    .attr("font-weight", "bold")
+                    .style("fill", "#d3d3d3")
+                    .text("Banana Quality");
+
+                svg.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", -35)
+                    .attr("text-anchor", "middle")
+                    .attr("font-size", "18px")
+                    .attr("class", "subtitle")
+                    .text("Sweetness");
+
+                const legend = svg.append("g")
+                    .attr("class", "legend")
+                    .attr("transform", `translate(${width - 130},${height - 150})`);
+
+                legend.append("rect")
+                    .attr("width", 120)
+                    .attr("height", 50)
+                    .attr("fill", "#2c2c2c")
+                    .attr("stroke", "#d3d3d3")
+                    .attr("rx", 10);
+
+                legend.append("circle")
+                    .attr("cx", 10)
+                    .attr("cy", 15)
+                    .attr("r", 6)
+                    .style("fill", "#4daf4a");
+
+                legend.append("text")
+                    .attr("x", 20)
+                    .attr("y", 20)
+                    .style("fill", "#d3d3d3")
+                    .text("Good");
+
+                legend.append("circle")
+                    .attr("cx", 10)
+                    .attr("cy", 35)
+                    .attr("r", 6)
+                    .style("fill", "#e41a1c");
+
+                legend.append("text")
+                    .attr("x", 20)
+                    .attr("y", 40)
+                    .style("fill", "#d3d3d3")
+                    .text("Bad");
+
+                const annotations = [
+                    {
+                        note: {
+                            label: "Large and sweet bananas tend to be good"
+                        },
+                        x: width - 30,
+                        y: 100,
+                        dy: 0,
+                        dx: -90
+                    },
+                    {
+                        note: {
+                            label: "Small and unsweet bananas tend to be bad"
+                        },
+                        x: 30,
+                        y: height - 70,
+                        dy: 0,
+                        dx: 70
+                    }
+                ];
+
+                const makeAnnotations = d3.annotation()
+                    .annotations(annotations)
+                    .type(d3.annotationLabel);
+
+                svg.append("g")
+                    .attr("class", "annotation")
+                    .call(makeAnnotations)
+                    .selectAll("text")
+                    .style("fill", "#d3d3d3");
+            }
+
+            function renderAcidity(data) {
+                const x = d3.scaleLinear()
+                    .domain(d3.extent(data, d => d.Size))
+                    .range([0, width]);
+
+                const y = d3.scaleLinear()
+                    .domain(d3.extent(data, d => d.Acidity))
+                    .range([height, 0]);
+
+                svg.append("g")
+                    .attr("class", "grid")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(make_x_gridlines(x)
+                        .tickSize(-height)
+                        .tickFormat(""))
+
+                svg.append("g")
+                    .attr("class", "grid")
+                    .call(make_y_gridlines(y)
+                        .tickSize(-width)
+                        .tickFormat(""))
+
+                svg.append("g")
+                    .attr("transform", `translate(0,${height})`)
+                    .attr("class", "axis")
+                    .call(d3.axisBottom(x).tickSize(0))
+                    .selectAll("text")
+                    .style("font-size", "12px")
+                    .style("fill", "#d3d3d3");
+
+                svg.append("g")
+                    .attr("class", "axis")
+                    .call(d3.axisLeft(y).tickSize(0))
+                    .selectAll("text")
+                    .style("font-size", "12px")
+                    .style("fill", "#d3d3d3");
+
+                svg.append("text")
+                    .attr("transform", `translate(${width / 2},${height + margin.bottom - 10})`)
+                    .style("text-anchor", "middle")
+                    .style("font-size", "12px")
+                    .style("fill", "#d3d3d3")
+                    .text("Size");
+
+                svg.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", -margin.left + 20)
+                    .attr("x", -height / 2)
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .style("font-size", "12px")
+                    .style("fill", "#d3d3d3")
+                    .text("Acidity");
+
+                const color = d3.scaleOrdinal()
+                    .domain(["Good", "Bad"])
+                    .range(["#4daf4a", "#e41a1c"]);
+
+                svg.append("g")
+                    .selectAll("dot")
+                    .data(data)
+                    .enter()
+                    .append("circle")
+                    .attr("class", "dot")
+                    .attr("cx", d => x(d.Size))
+                    .attr("cy", d => y(d.Acidity))
+                    .attr("r", 6)
+                    .style("fill", d => color(d.Quality));
+
+                svg.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", -60)
+                    .attr("text-anchor", "middle")
+                    .attr("font-size", "24px")
+                    .attr("font-weight", "bold")
+                    .style("fill", "#d3d3d3")
+                    .text("Banana Quality");
+
+                svg.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", -35)
+                    .attr("text-anchor", "middle")
+                    .attr("font-size", "18px")
+                    .attr("class", "subtitle")
+                    .text("Acidity");
+
+                const legend = svg.append("g")
+                    .attr("class", "legend")
+                    .attr("transform", `translate(${width - 130},${height - 150})`);
+
+                legend.append("rect")
+                    .attr("width", 120)
+                    .attr("height", 50)
+                    .attr("fill", "#2c2c2c")
+                    .attr("stroke", "#d3d3d3")
+                    .attr("rx", 10);
+
+                legend.append("circle")
+                    .attr("cx", 10)
+                    .attr("cy", 15)
+                    .attr("r", 6)
+                    .style("fill", "#4daf4a");
+
+                legend.append("text")
+                    .attr("x", 20)
+                    .attr("y", 20)
+                    .style("fill", "#d3d3d3")
+                    .text("Good");
+
+                legend.append("circle")
+                    .attr("cx", 10)
+                    .attr("cy", 35)
+                    .attr("r", 6)
+                    .style("fill", "#e41a1c");
+
+                legend.append("text")
+                    .attr("x", 20)
+                    .attr("y", 40)
+                    .style("fill", "#d3d3d3")
+                    .text("Bad");
+
+                const annotations = [
+                    {
+                        note: {
+                            label: "Large and basic bananas tend to be good"
+                        },
+                        x: width - 150,
+                        y: height - 50,
+                        dy: 0,
+                        dx: 0
+                    },
+                    {
+                        note: {
+                            label: "Small and acidic bananas tend to be bad"
+                        },
+                        x: 60,
+                        y: 0,
+                        dy: 0,
+                        dx: 0
+                    }
+                ];
+
+                const makeAnnotations = d3.annotation()
+                    .annotations(annotations)
+                    .type(d3.annotationLabel);
+
+                svg.append("g")
+                    .attr("class", "annotation")
+                    .call(makeAnnotations)
+                    .selectAll("text")
+                    .style("fill", "#d3d3d3");
+            }
+
+            d3.selectAll(".nav a").on("click", function() {
+                currentScene = d3.select(this).attr("id");
+                renderScene();
+            });
+
+            renderScene();
+        });
+    </script>
+</body>
+</html>
