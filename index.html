@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <title>Banana Quality Narrative Visualization</title>
     <script src="https://d3js.org/d3.v5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/2.5.1/d3-annotation.min.js"></script>
+    <script src="https://unpkg.com/d3-svg-annotation@2.5.1"></script>
     <style>
         body {
-            font-family: Georgia, serif;
-            background-color: #2c2c2c;
+            font-family: Verdana, sans-serif;
+            background-color: #1e1e1e;
             color: #d3d3d3;
             margin: 0;
             overflow: hidden;
@@ -17,27 +17,37 @@
             position: fixed;
             top: 0;
             width: 100%;
-            background-color: #2c2c2c;
+            background-color: #1e1e1e;
             text-align: center;
             padding: 10px;
             border-bottom: 1px solid #d3d3d3;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        }
+        .nav label {
+            font-size: 18px;
+            margin-right: 20px;
         }
         .nav a {
             color: #d3d3d3;
             margin: 0 15px;
             text-decoration: none;
             font-size: 18px;
-            padding: 10px;
-            border: 1px solid #d3d3d3;
-            border-radius: 5px;
+            border: 2px solid #d3d3d3;
+            border-radius: 10px;
+            padding: 5px 10px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .nav a:hover {
+            background-color: #d3d3d3;
+            color: #1e1e1e;
         }
         .nav a.active {
             font-weight: bold;
-            text-decoration: underline;
-            background-color: #444;
+            background-color: #d3d3d3;
+            color: #1e1e1e;
         }
         .container {
-            padding-top: 60px;
+            padding-top: 70px;
         }
         .dot {
             stroke: #d3d3d3;
@@ -47,10 +57,16 @@
             fill: #d3d3d3;
         }
         .annotation-note-bg {
-            display: none;
+            fill: #2c2c2c;
+            stroke: #d3d3d3;
+            stroke-width: 1px;
+            rx: 10;
         }
         .annotation-connector {
             display: none;
+        }
+        .annotation-note {
+            padding: 10px;
         }
         .axis path, .axis line {
             stroke: #d3d3d3;
@@ -73,6 +89,7 @@
 </head>
 <body>
     <div class="nav">
+        <label>Navigate:</label>
         <a href="#" id="ripeness" class="active">Ripeness</a>
         <a href="#" id="sweetness">Sweetness</a>
         <a href="#" id="acidity">Acidity</a>
@@ -86,7 +103,7 @@
         const height = 600 - margin.top - margin.bottom;
 
         const svg = d3.select("svg")
-            .style("background-color", "#2c2c2c")
+            .style("background-color", "#1e1e1e")
             .append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -140,13 +157,13 @@
                     .attr("transform", `translate(0,${height})`)
                     .call(make_x_gridlines(x)
                         .tickSize(-height)
-                        .tickFormat(""))
+                        .tickFormat(""));
 
                 svg.append("g")
                     .attr("class", "grid")
                     .call(make_y_gridlines(y)
                         .tickSize(-width)
-                        .tickFormat(""))
+                        .tickFormat(""));
 
                 svg.append("g")
                     .attr("transform", `translate(0,${height})`)
@@ -250,19 +267,25 @@
                 const annotations = [
                     {
                         note: {
-                            label: "Large and ripe bananas tend to be good"
+                            label: "Large and ripe bananas tend to be good",
+                            wrap: 100,
+                            // title: "Observation 1",
+                            bgPadding: {top: 10, left: 10, right: 10, bottom: 10}
                         },
-                        x: width + 30,
+                        x: width,
                         y: 20,
                         dy: 0,
-                        dx: -90
+                        dx: -70
                     },
                     {
                         note: {
-                            label: "Small and unripe bananas tend to be bad"
+                            label: "Small and unripe bananas tend to be bad",
+                            wrap: 100,
+                            // title: "Observation 2",
+                            bgPadding: {top: 10, left: 10, right: 10, bottom: 10}
                         },
-                        x: 10,
-                        y: height - 90,
+                        x: 5,
+                        y: height - 100,
                         dy: 0,
                         dx: 70
                     }
@@ -270,13 +293,18 @@
 
                 const makeAnnotations = d3.annotation()
                     .annotations(annotations)
-                    .type(d3.annotationLabel);
+                    .type(d3.annotationLabel)
+                    .notePadding(15);
 
-                svg.append("g")
+                const annotationGroup = svg.append("g")
                     .attr("class", "annotation")
-                    .call(makeAnnotations)
-                    .selectAll("text")
-                    .style("fill", "#d3d3d3");
+                    .call(makeAnnotations);
+
+                annotationGroup.selectAll(".annotation-note-title")
+                    .style("fill", "#ff6600");
+
+                annotationGroup.selectAll(".annotation-note-label")
+                    .style("fill", "#dda0dd");
             }
 
             function renderSweetness(data) {
@@ -293,13 +321,13 @@
                     .attr("transform", `translate(0,${height})`)
                     .call(make_x_gridlines(x)
                         .tickSize(-height)
-                        .tickFormat(""))
+                        .tickFormat(""));
 
                 svg.append("g")
                     .attr("class", "grid")
                     .call(make_y_gridlines(y)
                         .tickSize(-width)
-                        .tickFormat(""))
+                        .tickFormat(""));
 
                 svg.append("g")
                     .attr("transform", `translate(0,${height})`)
@@ -403,18 +431,24 @@
                 const annotations = [
                     {
                         note: {
-                            label: "Large and sweet bananas tend to be good"
+                            label: "Large and sweet bananas tend to be good",
+                            wrap: 180,
+                            // title: "Observation 1",
+                            bgPadding: {top: 10, left: 10, right: 10, bottom: 10}
                         },
-                        x: width - 30,
-                        y: 100,
+                        x: width - 80,
+                        y: 20,
                         dy: 0,
-                        dx: -90
+                        dx: -70
                     },
                     {
                         note: {
-                            label: "Small and unsweet bananas tend to be bad"
+                            label: "Small and unsweet bananas tend to be bad",
+                            wrap: 180,
+                            // title: "Observation 2",
+                            bgPadding: {top: 10, left: 10, right: 10, bottom: 10}
                         },
-                        x: 30,
+                        x: 40,
                         y: height - 70,
                         dy: 0,
                         dx: 70
@@ -423,13 +457,18 @@
 
                 const makeAnnotations = d3.annotation()
                     .annotations(annotations)
-                    .type(d3.annotationLabel);
+                    .type(d3.annotationLabel)
+                    .notePadding(15);
 
-                svg.append("g")
+                const annotationGroup = svg.append("g")
                     .attr("class", "annotation")
-                    .call(makeAnnotations)
-                    .selectAll("text")
-                    .style("fill", "#d3d3d3");
+                    .call(makeAnnotations);
+
+                annotationGroup.selectAll(".annotation-note-title")
+                    .style("fill", "#ff6600");
+
+                annotationGroup.selectAll(".annotation-note-label")
+                    .style("fill", "#dda0dd");
             }
 
             function renderAcidity(data) {
@@ -446,13 +485,13 @@
                     .attr("transform", `translate(0,${height})`)
                     .call(make_x_gridlines(x)
                         .tickSize(-height)
-                        .tickFormat(""))
+                        .tickFormat(""));
 
                 svg.append("g")
                     .attr("class", "grid")
                     .call(make_y_gridlines(y)
                         .tickSize(-width)
-                        .tickFormat(""))
+                        .tickFormat(""));
 
                 svg.append("g")
                     .attr("transform", `translate(0,${height})`)
@@ -556,16 +595,22 @@
                 const annotations = [
                     {
                         note: {
-                            label: "Large and basic bananas tend to be good"
+                            label: "Large and basic bananas tend to be good",
+                            wrap: 180,
+                            // title: "Observation 1",
+                            bgPadding: {top: 10, left: 10, right: 10, bottom: 10}
                         },
                         x: width - 150,
-                        y: height - 50,
+                        y: height - 70,
                         dy: 0,
                         dx: 0
                     },
                     {
                         note: {
-                            label: "Small and acidic bananas tend to be bad"
+                            label: "Small and acidic bananas tend to be bad",
+                            wrap: 100,
+                            // title: "Observation 2",
+                            bgPadding: {top: 10, left: 10, right: 10, bottom: 10}
                         },
                         x: 60,
                         y: 0,
@@ -576,13 +621,18 @@
 
                 const makeAnnotations = d3.annotation()
                     .annotations(annotations)
-                    .type(d3.annotationLabel);
+                    .type(d3.annotationLabel)
+                    .notePadding(15);
 
-                svg.append("g")
+                const annotationGroup = svg.append("g")
                     .attr("class", "annotation")
-                    .call(makeAnnotations)
-                    .selectAll("text")
-                    .style("fill", "#d3d3d3");
+                    .call(makeAnnotations);
+
+                annotationGroup.selectAll(".annotation-note-title")
+                    .style("fill", "#ff6600");
+
+                annotationGroup.selectAll(".annotation-note-label")
+                    .style("fill", "#dda0dd");
             }
 
             d3.selectAll(".nav a").on("click", function() {
